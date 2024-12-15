@@ -1,0 +1,30 @@
+{
+  "name": "plc-monitor",
+  "private": true,
+  "version": "0.1.0",
+  "type": "commonjs",
+  "scripts": {
+    "server:dev": "ts-node-dev --respawn --transpile-only server/index.ts",
+    "server:build": "tsc -p tsconfig.server.json",
+    "server:start": "node dist/server/index.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "modbus-serial": "^8.0.17",
+    "nodes7": "^0.3.18",
+    "socket.io": "^4.8.1",
+    "ts-node": "^10.9.2"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.17.10",
+    "@types/socket.io": "^3.0.1",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.7.2"
+  },
+  "main": "index.js",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": ""
+}

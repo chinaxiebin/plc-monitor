@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PLC 监控系统</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #fff;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .connection-status {
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+        .connected {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .disconnected {
+            background-color: #f44336;
+            color: white;
+        }
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .section {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .section h2 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        .io-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 10px;
+        }
+        .io-item {
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid #ddd;
+            min-height: 80px;  
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: transparent;
+        }
+        .hex-value {
+            margin-top: 5px;
+            font-size: 0.8em;
+            color: #666;
+            font-family: monospace;
+        }
+        .io-item:hover {
+            transform: translateY(-2px);
+        }
+        .input {
+            cursor: default;
+        }
+        .output:hover {
+            border-color: #2196F3;
+        }
+        .on {
+            background-color: #a5d6a7;
+            border-color: #4CAF50;
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.3);
+        }
+        .off {
+            background-color: transparent;
+            border-color: #ddd;
+            box-shadow: none;
+        }
+        .label {
+            margin-top: 5px;
+            font-size: 0.9em;
+            color: #333;
+            font-weight: bold;
+        }
+        .data-item {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            background-color: white;
+        }
+        
+        .data-label {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .data-value {
+            font-size: 1.2em;
+            margin: 5px 0;
+            color: #2196F3;
+        }
+        
+        .data-input {
+            display: flex;
+            gap: 10px;
+            margin-top: 5px;
+        }
+        
+        .data-input input {
+            flex: 1;
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+        }
+        
+        .data-input button {
+            padding: 5px 10px;
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        
+        .data-input button:hover {
+            background-color: #1976D2;
+        }
+    </style>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>PLC 监控系统</h1>
+            <div id="connectionStatus" class="connection-status disconnected">未连接</div>
+        </div>
+        <div id="status" style="margin-bottom: 10px; padding: 5px; border-radius: 4px;">
+            PLC状态: <span id="plc-status" style="font-weight: bold; color: red;">未连接</span>
+        </div>
+        
+        <div class="grid-container">
+            <div class="section">
+                <h2>输入点 <span id="input-hex" class="hex-value">(0x00)</span></h2>
+                <div class="io-grid" id="input-container"></div>
+            </div>
+
+            <div class="section">
+                <h2>输出点 <span id="output-hex" class="hex-value">(0x00)</span></h2>
+                <div class="io-grid" id="output-container"></div>
+            </div>
+
+            <div class="section">
+                <h2>数据区</h2>
+                <div id="data-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const socket = io({
+            transports: ['websocket', 'polling'],
+            reconnection: true,
+            reconnectionAttempts: 5,
+            reconnectionDelay: 1000
+        });
+        let plcConnected = false;
+        const plcValues = {};  // 存储PLC值的对象
+
+        // Socket.IO事件处理
+        socket.on('connect', () => {
+            console.log('Connected to server');
+            updateConnectionStatus(true);
+        });
+
+        socket.on('connect_error', (error) => {
+            console.error('Connection error:', error);
+            updateConnectionStatus(false);
+            plcConnected = false;
+            updatePlcStatus(false);
+        });
+
+        socket.on('disconnect', () => {
+            console.log('Disconnected from server');
+            updateConnectionStatus(false);
+            plcConnected = false;
+            updatePlcStatus(false);
+        });
+
+        socket.on('plc-connection-status', (status) => {
+            console.log('PLC connection status:', status);
+            plcConnected = status;
+            updatePlcStatus(status);
+        });
+
+        socket.on('values-changed', (changes) => {
+            console.log('Values changed:', changes);
+            changes.forEach(({ name, value }) => {
+                plcValues[name] = value;
+                updateValue(name, value);
+            });
+            updateHexDisplay();
+        });
+
+        socket.on('write-error', (error) => {
+            console.error('Write error:', error);
+            alert(`写入失败: ${error.name} - ${error.error}`);
+        });
+
+        // 更新PLC状态显示
+        function updatePlcStatus(connected) {
+            const statusElement = document.getElementById('plc-status');
+            if (connected) {
+                statusElement.textContent = '已连接';
+                statusElement.style.color = 'green';
+            } else {
+                statusElement.textContent = '未连接';
+                statusElement.style.color = 'red';
+            }
+        }
+
+        // 更新Socket连接状态显示
+        function updateConnectionStatus(connected) {
+            const element = document.getElementById('connectionStatus');
+            if (connected) {
+                element.classList.remove('disconnected');
+                element.classList.add('connected');
+                element.textContent = '已连接';
+            } else {
+                element.classList.remove('connected');
+                element.classList.add('disconnected');
+                element.textContent = '未连接';
+                // 断开连接时清空所有值
+                Object.keys(plcValues).forEach(name => {
+                    plcValues[name] = false;
+                    updateValue(name, false);
+                });
+                updateHexDisplay();
+            }
+        }
+
+        // 创建IO点位显示
+        function createIOPoints() {
+            const inputContainer = document.getElementById('input-container');
+            const outputContainer = document.getElementById('output-container');
+            
+            // 创建8个输入点
+            for (let i = 0; i < 8; i++) {
+                const name = `sensorStatus${i + 1}`;
+                const div = document.createElement('div');
+                div.className = 'io-item input off';
+                div.innerHTML = `
+                    <div class="label">X${i}</div>
+                    <div class="hex-value">(0x${(1 << i).toString(16).padStart(2, '0')})</div>
+                `;
+                inputContainer.appendChild(div);
+            }
+            
+            // 创建8个输出点
+            for (let i = 0; i < 8; i++) {
+                const name = `output${i + 1}`;
+                const div = document.createElement('div');
+                div.className = 'io-item output off';
+                div.setAttribute('data-name', name);
+                div.onclick = () => toggleOutput(name);
+                div.innerHTML = `
+                    <div class="label">Y${i}</div>
+                    <div class="hex-value">(0x${(1 << i).toString(16).padStart(2, '0')})</div>
+                `;
+                outputContainer.appendChild(div);
+            }
+        }
+
+        // 切换输出状态
+        function toggleOutput(name) {
+            if (!plcConnected) return;
+            const currentValue = plcValues[name] || false;
+            socket.emit('write-value', { name, value: !currentValue });
+        }
+
+        // 更新值显示
+        function updateValue(name, value) {
+            if (name.startsWith('sensorStatus')) {
+                // 更新输入点显示
+                const index = parseInt(name.replace('sensorStatus', '')) - 1;
+                const elements = document.querySelectorAll('#input-container .io-item');
+                if (elements[index]) {
+                    elements[index].className = `io-item input ${value ? 'on' : 'off'}`;
+                }
+            } else if (name.startsWith('output')) {
+                // 更新输出点显示
+                const index = parseInt(name.replace('output', '')) - 1;
+                const elements = document.querySelectorAll('#output-container .io-item');
+                if (elements[index]) {
+                    elements[index].className = `io-item output ${value ? 'on' : 'off'}`;
+                }
+            } else if (name.startsWith('data')) {
+                // 更新数据区显示
+                const valueElement = document.querySelector(`#${name}-value`);
+                if (valueElement) {
+                    valueElement.textContent = value;
+                }
+            }
+        }
+
+        // 写入数据值
+        function writeDataValue(name) {
+            if (!plcConnected) return;
+            const input = document.querySelector(`#${name}-input`);
+            if (input) {
+                const value = parseInt(input.value);
+                if (!isNaN(value)) {
+                    socket.emit('write-value', { name, value });
+                }
+            }
+        }
+
+        // 更新组合十六进制值显示
+        function updateHexDisplay() {
+            let inputValue = 0;
+            let outputValue = 0;
+
+            // 计算输入组合值
+            for (let i = 0; i < 8; i++) {
+                const name = `sensorStatus${i + 1}`;
+                if (plcValues[name]) {
+                    inputValue |= (1 << i);
+                }
+            }
+
+            // 计算输出组合值
+            for (let i = 0; i < 8; i++) {
+                const name = `output${i + 1}`;
+                if (plcValues[name]) {
+                    outputValue |= (1 << i);
+                }
+            }
+
+            // 更新显示
+            document.getElementById('input-hex').textContent = 
+                `(0x${inputValue.toString(16).padStart(2, '0')})`;
+            document.getElementById('output-hex').textContent = 
+                `(0x${outputValue.toString(16).padStart(2, '0')})`;
+        }
+
+        // 创建数据区显示
+        function createDataPoints() {
+            const container = document.getElementById('data-container');
+            
+            // 创建4个数据点
+            for (let i = 1; i <= 4; i++) {
+                const name = `data${i}`;
+                const div = document.createElement('div');
+                div.className = 'data-item';
+                div.innerHTML = `
+                    <div class="data-label">D${i-1}</div>
+                    <div class="data-value" id="${name}-value">0</div>
+                    <div class="data-input">
+                        <input type="number" id="${name}-input" min="0" max="65535">
+                        <button onclick="writeDataValue('${name}')">写入</button>
+                    </div>
+                `;
+                container.appendChild(div);
+            }
+        }
+
+        // 初始化显示
+        createIOPoints();
+        createDataPoints();
+    </script>
+</body>
+</html>
