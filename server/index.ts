@@ -21,9 +21,49 @@ const io = new Server(httpServer, {
     pingInterval: 25000
 });
 
+// 平台相关的工具函数
+const getPlatformSpecificPath = (relativePath: string): string => {
+    return path.resolve(__dirname, relativePath).replace(/\\/g, '/');
+};
+
 // 静态文件服务
-app.use(express.static(path.join(__dirname, '../public')));
-console.log('Static files served from:', path.join(__dirname, '../public'));
+const publicPath = getPlatformSpecificPath('../dist/public');
+app.use(express.static(publicPath));
+console.log('Static files served from:', publicPath);
+
+// 确保dist/public目录存在
+const fs = require('fs');
+if (!fs.existsSync(publicPath)) {
+    fs.mkdirSync(publicPath, { recursive: true });
+    console.log('Created public directory:', publicPath);
+}
+
+// 根路由处理
+app.get('/', (req, res, next) => {
+    console.log('Handling root route');
+    const indexPath = path.join(publicPath, 'index.html');
+    console.log('Trying to serve:', indexPath);
+    
+    if (!fs.existsSync(indexPath)) {
+        console.error('index.html not found at:', indexPath);
+        // 如果生产环境的路径不存在，尝试开发环境的路径
+        const devIndexPath = getPlatformSpecificPath('../../public/index.html');
+        console.log('Trying development path:', devIndexPath);
+        
+        if (fs.existsSync(devIndexPath)) {
+            console.log('Found index.html in development path');
+            return res.sendFile(devIndexPath);
+        }
+        return next(new Error(`index.html not found in any location. Tried:\n- ${indexPath}\n- ${devIndexPath}`));
+    }
+    
+    try {
+        res.sendFile(indexPath);
+    } catch (err) {
+        console.error('Error sending file:', err);
+        next(err);
+    }
+});
 
 // 配置CORS中间件
 app.use((req, res, next) => {
@@ -52,6 +92,17 @@ const plcService = new PLCService(io, plcConfig);
 
 // 添加PLC变量配置
 plcService.addTags(PLCTags);
+
+// 错误处理中间件
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    console.error('Server error:', err);
+    console.error('Error stack:', err.stack);
+    res.status(500).json({
+        message: 'Server error',
+        error: err.message,
+        stack: process.env.NODE_ENV === 'production' ? undefined : err.stack
+    });
+});
 
 // WebSocket连接处理
 io.on('connection', (socket) => {
@@ -86,12 +137,6 @@ io.on('connection', (socket) => {
     socket.on('disconnect', () => {
         console.log('Client disconnected');
     });
-});
-
-// 错误处理中间件
-app.use((err: any, _req: any, res: any, _next: any) => {
-    console.error('Server error:', err);
-    res.status(500).send('Something broke!');
 });
 
 // 启动服务器

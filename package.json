@@ -5,8 +5,11 @@
   "type": "commonjs",
   "scripts": {
     "server:dev": "ts-node-dev --respawn --transpile-only server/index.ts",
-    "server:build": "tsc -p tsconfig.server.json",
-    "server:start": "node dist/server/index.js"
+    "server:build": "tsc -p tsconfig.server.json && npm run copy-public",
+    "server:start": "node dist/server/index.js",
+    "copy-public:win": "powershell -Command \"Copy-Item -Path ./public/* -Destination ./dist/public -Recurse -Force\"",
+    "copy-public:linux": "cp -r ./public/* ./dist/public",
+    "copy-public": "node -e \"if (process.platform === 'win32') { require('child_process').execSync('npm run copy-public:win') } else { require('child_process').execSync('npm run copy-public:linux') }\""
   },
   "dependencies": {
     "express": "^4.21.2",
