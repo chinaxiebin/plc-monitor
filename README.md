@@ -91,7 +91,9 @@ const plcConfig = {
 - Node.js >= 14.0.0
 - npm >= 6.0.0
 
-## 安装
+## 安装和使用
+
+### 方式一：开发者安装（推荐）
 
 1. 克隆仓库：
 ```bash
@@ -104,29 +106,31 @@ cd plc-monitor
 npm install
 ```
 
-## 开发
+3. 运行项目：
+- 开发模式（支持热重载）：
+  ```bash
+  npm run server:dev
+  ```
+- 生产模式：
+  - Windows：双击运行 `start.bat`
+  - Linux：`npm run server:start`
 
-开发模式运行（支持热重载）：
+### 方式二：发布版本安装
+
+1. 从 [Releases](https://github.com/[username]/plc-monitor/releases) 页面下载最新版本
+   - Windows 用户下载：`plc-monitor.zip`
+   - Linux 用户下载：`plc-monitor.tar.gz`
+
+2. 解压下载的文件
+
+3. 安装依赖：
 ```bash
-npm run server:dev
+npm install
 ```
 
-## 构建和运行
-
-1. 构建项目：
-```bash
-npm run server:build
-```
-
-2. 运行项目：
-- Windows：
-  ```bash
-  start.bat
-  ```
-- Linux：
-  ```bash
-  npm run server:start
-  ```
+4. 运行项目：
+- Windows：双击运行 `start.bat`
+- Linux：`npm run server:start`
 
 ## 项目结构
 
@@ -158,13 +162,6 @@ const plcConfig = {
 };
 ```
 
-## 跨平台支持
-
-项目支持在 Windows 和 Linux 环境下运行：
-- 自动检测运行平台
-- 自适应文件路径处理
-- 平台特定的文件操作命令
-
 ## 开发说明
 
 1. 开发模式支持热重载
@@ -172,11 +169,30 @@ const plcConfig = {
 3. 支持 TypeScript 类型检查
 4. 包含完整的错误处理和日志记录
 
-## 部署
+## 跨平台支持
 
-1. 确保已安装所有依赖
-2. 运行构建命令生成生产版本
-3. 使用 start.bat (Windows) 或 npm run server:start (Linux) 启动服务
+项目支持在 Windows 和 Linux 环境下运行：
+- 自动检测运行平台
+- 自适应文件路径处理
+- 平台特定的文件操作命令
+
+## 发布新版本
+
+1. 构建发布包：
+- Windows：
+  ```bash
+  npm run package
+  ```
+- Linux：
+  ```bash
+  npm run package:linux
+  ```
+
+2. 发布包内容：
+- 编译后的代码（dist 目录）
+- 启动脚本（start.bat/start.sh）
+- 配置文件（package.json）
+- 说明文档（README.md）
 
 ## 故障排除
 
@@ -185,6 +201,22 @@ const plcConfig = {
 2. 确认服务器端口是否被占用
 3. 查看控制台错误日志
 4. 确保已安装所有依赖
+
+### 常见问题
+
+1. 无法启动服务器
+   - 检查端口 3000 是否被占用
+   - 确认 Node.js 版本是否符合要求
+
+2. PLC 连接失败
+   - 验证 PLC IP 地址和端口配置
+   - 检查网络连接
+   - 确认 PLC 是否支持 Modbus TCP
+
+3. 页面无法加载
+   - 确认服务器是否正常运行
+   - 检查浏览器控制台错误信息
+   - 清除浏览器缓存
 
 ## 许可证
 
