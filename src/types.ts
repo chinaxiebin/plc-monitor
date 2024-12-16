@@ -20,26 +20,3 @@ export interface TagConfig {
     writing?: boolean;
     format?: 'DEC' | 'HEX' | 'BIN';
 }
-
-export interface PLCConfig {
-    ip: string;
-    port?: number;
-    simulation?: boolean;
-}
-
-export interface TagGroup {
-    type: TagType;
-    startAddress: number;
-    length: number;
-    refreshRate: number;
-    tags: string[];
-}
-
-export interface AnalogConfig {
-    name: string;
-    description: string;
-    unit: string;
-    minValue: number;
-    maxValue: number;
-    scale: number;
-}

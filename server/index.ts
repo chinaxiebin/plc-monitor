@@ -4,6 +4,8 @@ import { Server } from 'socket.io';
 import { PLCService } from './plc-service';
 import { PLCTags } from './plc-tags';
 import path from 'path';
+import configRouter from './routes/config';
+import database from './database';
 
 const app = express();
 const httpServer = createServer(app);
@@ -25,6 +27,12 @@ const io = new Server(httpServer, {
 const getPlatformSpecificPath = (relativePath: string): string => {
     return path.resolve(__dirname, relativePath).replace(/\\/g, '/');
 };
+
+// 初始化数据库
+database.init().catch(console.error);
+
+// 注册路由
+app.use('/api/config', configRouter);
 
 // 静态文件服务
 const publicPath = getPlatformSpecificPath('../dist/public');

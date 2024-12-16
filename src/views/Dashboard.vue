@@ -4,84 +4,44 @@
       <el-header>
         <div class="header-content">
           <h2>AM521 监控</h2>
-          <div class="connection-status" :class="{ connected: isConnected }">
-            {{ isConnected ? '已连接' : '未连接' }}
+          <div class="header-right">
+            <router-link to="/config" class="config-link">
+              <el-button type="primary" plain>系统配置</el-button>
+            </router-link>
+            <div class="connection-status" :class="{ connected: isConnected }">
+              {{ isConnected ? '已连接' : '未连接' }}
+            </div>
           </div>
         </div>
       </el-header>
       
-      <el-main>
-        <!-- 数字量输入面板 -->
-        <el-card class="io-panel">
-          <template #header>
-            <div class="card-header">
-              <span>数字量输入</span>
-            </div>
-          </template>
-          <div class="io-grid">
-            <div v-for="i in 8" :key="'X'+(i-1)" class="io-item">
-              <div class="io-indicator" :class="{ active: digitalInputs['X'+(i-1)] }"></div>
-              <span class="io-label">X{{i-1}}</span>
-              <span class="io-value">{{digitalInputs['X'+(i-1)] ? 'ON' : 'OFF'}}</span>
-            </div>
-          </div>
-        </el-card>
-        
-        <!-- 数字量输出面板 -->
-        <el-card class="io-panel">
-          <template #header>
-            <div class="card-header">
-              <span>数字量输出</span>
-            </div>
-          </template>
-          <div class="io-grid">
-            <div v-for="i in 8" :key="'Y'+(i-1)" class="io-item">
-              <div class="io-indicator" :class="{ active: digitalOutputs['Y'+(i-1)] }"></div>
-              <span class="io-label">Y{{i-1}}</span>
-              <span class="io-value">{{digitalOutputs['Y'+(i-1)] ? 'ON' : 'OFF'}}</span>
-              <el-button type="primary" size="small" @click="handleOutputClick('Y'+(i-1))">切换</el-button>
-            </div>
-          </div>
-        </el-card>
-
-        <!-- 通信状态面板 -->
-        <el-card class="status-panel">
-          <template #header>
-            <div class="card-header">
-              <span>通信状态</span>
-              <el-button type="primary" size="small" @click="refreshConnection">重连</el-button>
-            </div>
-          </template>
-          <div class="status-info">
-            <div class="status-grid">
-              <div class="status-item">
-                <span class="label">PLC型号</span>
-                <span class="value">AM521</span>
-              </div>
-              <div class="status-item">
-                <span class="label">通信地址</span>
-                <span class="value">{{plcAddress}}</span>
-              </div>
-              <div class="status-item">
-                <span class="label">刷新周期</span>
-                <span class="value">{{refreshRate}}ms</span>
-              </div>
-              <div class="status-item">
-                <span class="label">在线时长</span>
-                <span class="value">{{onlineTime}}</span>
-              </div>
-              <div class="status-item">
-                <span class="label">通信质量</span>
-                <span class="value">{{commQuality}}%</span>
-              </div>
-              <div class="status-item">
-                <span class="label">错误计数</span>
-                <span class="value">{{errorCount}}</span>
-              </div>
-            </div>
-          </div>
-        </el-card>
-      </el-main>
+      <el-container>
+        <el-aside width="300px">
+          <plc-list />
+        </el-aside>
+        <el-main>
+          <el-tabs v-model="activeTab">
+            <el-tab-pane label="数字量监控" name="digital">
+              <digital-monitor />
+            </el-tab-pane>
+            <el-tab-pane label="模拟量输入" name="analogIn">
+              <analog-monitor />
+            </el-tab-pane>
+            <el-tab-pane label="模拟量输出" name="analogOut">
+              <AnalogOutputMonitor />
+            </el-tab-pane>
+            <el-tab-pane label="数据寄存器" name="register">
+              <RegisterMonitor />
+            </el-tab-pane>
+            <el-tab-pane label="报警监控" name="alarm">
+              <AlarmMonitor />
+            </el-tab-pane>
+            <el-tab-pane label="配置管理" name="config">
+              <ConfigManager />
+            </el-tab-pane>
+          </el-tabs>
+        </el-main>
+      </el-container>
     </el-container>
   </div>
 </template>
@@ -91,6 +51,10 @@ import { onMounted, onUnmounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { usePLCStore } from '../stores/plc'
 import { usePLCSocket } from '../composables/usePLCSocket'
+import AlarmMonitor from '@/components/AlarmMonitor.vue';
+import AnalogOutputMonitor from '@/components/AnalogOutputMonitor.vue';
+import RegisterMonitor from '@/components/RegisterMonitor.vue';
+import ConfigManager from '@/components/ConfigManager.vue';
 
 const plcStore = usePLCStore()
 const { connected: isConnected, digitalInputs, digitalOutputs } = storeToRefs(plcStore)
@@ -127,6 +91,8 @@ onMounted(() => {
 onUnmounted(() => {
   disconnect()
 })
+
+const activeTab = ref('digital')
 </script>
 
 <style scoped lang="scss">
@@ -153,6 +119,12 @@ onUnmounted(() => {
         margin: 0;
         font-size: 18px;
       }
+    }
+    
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
     }
     
     .connection-status {
@@ -317,5 +289,9 @@ onUnmounted(() => {
       }
     }
   }
+}
+
+.config-link {
+  text-decoration: none;
 }
 </style>

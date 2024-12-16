@@ -1,0 +1,29 @@
+appId: com.plc-monitor.app
+productName: PLC Monitor
+directories:
+  output: dist_electron
+  buildResources: build
+files:
+  - dist_electron/**/*
+  - node_modules/**/*
+extraResources:
+  - from: resources/
+    to: resources/
+win:
+  icon: build/icon.ico
+  target:
+    - target: portable
+      arch:
+        - x64
+  artifactName: ${productName}-portable-${version}.${ext}
+  portable:
+    splashImage: build/splash.png
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: PLC Monitor
+  uninstallDisplayName: PLC Monitor
+  artifactName: ${productName}-setup-${version}.${ext}
+electronVersion: 25.8.0
