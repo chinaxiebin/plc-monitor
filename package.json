@@ -9,7 +9,9 @@
     "server:start": "node dist/server/index.js",
     "copy-public:win": "powershell -Command \"Copy-Item -Path ./public/* -Destination ./dist/public -Recurse -Force\"",
     "copy-public:linux": "cp -r ./public/* ./dist/public",
-    "copy-public": "node -e \"if (process.platform === 'win32') { require('child_process').execSync('npm run copy-public:win') } else { require('child_process').execSync('npm run copy-public:linux') }\""
+    "copy-public": "node -e \"if (process.platform === 'win32') { require('child_process').execSync('npm run copy-public:win') } else { require('child_process').execSync('npm run copy-public:linux') }\"",
+    "package": "npm run server:build && powershell -Command \"Compress-Archive -Path dist,package.json,README.md,start.bat -DestinationPath ./plc-monitor.zip -Force\"",
+    "package:linux": "npm run server:build && tar -czf plc-monitor.tar.gz dist package.json README.md"
   },
   "dependencies": {
     "express": "^4.21.2",
@@ -29,5 +31,5 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": ""
+  "description": "PLC monitoring system with cross-platform support"
 }
