@@ -26,14 +26,34 @@ export function usePLCSocket() {
         // 更新数字量输入状态
         const inputs: { [key: string]: boolean } = {};
         const outputs: { [key: string]: boolean } = {};
+        const analogs: { [key: string]: number } = {};
 
+        // 处理数字量输入输出
         for (let i = 0; i < 8; i++) {
           inputs[`X${i}`] = data[`X${i}`];
           outputs[`Y${i}`] = data[`Y${i}`];
         }
 
+        // 处理模拟量数据
+        for (let i = 0; i < 4; i++) {
+          analogs[`D${i}`] = data[`D${i}`] || 0;
+        }
+
         plcStore.updateInputs(inputs);
         plcStore.updateOutputs(outputs);
+        plcStore.updateAnalogValues(analogs);
+      });
+
+      // 监听配置更新
+      socket.value.on('plc-config', (config: any) => {
+        if (config.analogConfigs) {
+          plcStore.updateAnalogConfigs(config.analogConfigs);
+        }
+      });
+
+      // 监听通信状态
+      socket.value.on('plc-status', (status: any) => {
+        plcStore.updateCommStatus(status.quality, status.errors);
       });
     }
   };

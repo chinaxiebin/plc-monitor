@@ -1,34 +1,47 @@
 {
   "name": "plc-monitor",
+  "version": "1.0.0",
   "private": true,
-  "version": "0.1.0",
-  "type": "commonjs",
   "scripts": {
-    "server:dev": "ts-node-dev --respawn --transpile-only server/index.ts",
-    "server:build": "tsc -p tsconfig.server.json && npm run copy-public",
-    "server:start": "node dist/server/index.js",
-    "copy-public:win": "powershell -Command \"Copy-Item -Path ./public/* -Destination ./dist/public -Recurse -Force\"",
-    "copy-public:linux": "cp -r ./public/* ./dist/public",
-    "copy-public": "node -e \"if (process.platform === 'win32') { require('child_process').execSync('npm run copy-public:win') } else { require('child_process').execSync('npm run copy-public:linux') }\"",
-    "package": "npm run server:build && powershell -Command \"Compress-Archive -Path dist,package.json,README.md,start.bat -DestinationPath ./plc-monitor.zip -Force\"",
-    "package:linux": "npm run server:build && tar -czf plc-monitor.tar.gz dist package.json README.md"
+    "serve": "vue-cli-service serve",
+    "build": "vue-cli-service build",
+    "lint": "vue-cli-service lint",
+    "electron:build": "vue-cli-service electron:build",
+    "electron:serve": "vue-cli-service electron:serve",
+    "postinstall": "electron-builder install-app-deps",
+    "postuninstall": "electron-builder install-app-deps",
+    "build:win": "vue-cli-service electron:build --windows portable",
+    "build:win-setup": "vue-cli-service electron:build --windows nsis"
   },
+  "main": "background.js",
   "dependencies": {
-    "express": "^4.21.2",
-    "modbus-serial": "^8.0.17",
-    "socket.io": "^4.8.1",
-    "ts-node": "^10.9.2"
+    "@ant-design/icons-vue": "^7.0.1",
+    "ant-design-vue": "^4.0.7",
+    "cors": "^2.8.5",
+    "dayjs": "^1.11.10",
+    "echarts": "^5.4.3",
+    "electron-is-dev": "^2.0.0",
+    "express": "^4.18.2",
+    "get-port": "^7.0.0",
+    "lodash": "^4.17.21",
+    "lowdb": "^3.0.0",
+    "modbus-serial": "^8.0.13",
+    "vue": "^3.3.4",
+    "vue-echarts": "^6.6.1",
+    "vue-router": "^4.2.5",
+    "zod": "^3.24.1"
   },
   "devDependencies": {
     "@types/express": "^4.17.21",
-    "@types/node": "^20.17.10",
-    "@types/socket.io": "^3.0.1",
-    "ts-node-dev": "^2.0.0",
-    "typescript": "^5.7.2"
-  },
-  "main": "index.js",
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "PLC monitoring system with cross-platform support"
+    "@types/lodash": "^4.14.202",
+    "@types/node": "^18.19.3",
+    "@types/uuid": "^10.0.0",
+    "@vue/cli-plugin-typescript": "~5.0.0",
+    "@vue/cli-service": "~5.0.0",
+    "@vue/eslint-config-typescript": "^9.1.0",
+    "electron": "^25.8.0",
+    "electron-builder": "^24.9.1",
+    "typescript": "~4.5.5",
+    "vue-cli-plugin-electron-builder": "~2.1.1"
+  }
 }
